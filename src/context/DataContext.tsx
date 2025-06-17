@@ -245,9 +245,20 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const updateCustomer = async (id: string, customerData: Partial<Customer>) => {
     try {
+      // Map to Supabase schema (snake_case)
+      const supabaseCustomer: any = {};
+      if (customerData.name !== undefined) supabaseCustomer.name = customerData.name;
+      if (customerData.phone !== undefined) supabaseCustomer.phone = customerData.phone;
+      if (customerData.whatsappNumber !== undefined) supabaseCustomer.whatsapp_number = customerData.whatsappNumber;
+      if (customerData.whatsappEnabled !== undefined) supabaseCustomer.whatsapp_enabled = customerData.whatsappEnabled;
+      if (customerData.address !== undefined) supabaseCustomer.address = customerData.address;
+      if (customerData.notes !== undefined) supabaseCustomer.notes = customerData.notes;
+      if (customerData.customerId !== undefined) supabaseCustomer.customer_id = customerData.customerId;
+      // Do not update id, createdAt, or orders
+
       const { data, error } = await supabase
         .from('customers')
-        .update(customerData)
+        .update(supabaseCustomer)
         .eq('id', id)
         .select()
         .single();
@@ -257,8 +268,22 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw error;
       }
 
+      // Map back to our app's format
+      const mappedCustomer: Customer = {
+        id: data.id,
+        customerId: data.customer_id,
+        name: data.name,
+        phone: data.phone,
+        whatsappNumber: data.whatsapp_number,
+        whatsappEnabled: data.whatsapp_enabled,
+        address: data.address,
+        notes: data.notes,
+        createdAt: new Date(data.created_at),
+        orders: [] // Orders are not updated here
+      };
+
       setCustomers(prev => prev.map(customer => 
-        customer.id === id ? data : customer
+        customer.id === id ? mappedCustomer : customer
       ));
     } catch (error) {
       console.error('Error updating customer:', error);
